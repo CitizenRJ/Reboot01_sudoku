@@ -5,184 +5,82 @@ import (
 	"os"
 )
 
-// Husain Hanoon
-
-func ValidateArgs() bool {
-	args := os.Args[1:]
-	// the operating system and arguements,
-	if len(args) != 9 {
-		return false
-	}
-	//it will check the number of rows from 1 to 9.
-	for _, arg := range args {
-		if len(arg) != 9 {
-			return false
-		}
-		//the range of argument, it will check the number of boxes from 1 to 9 or (.) .
-		for _, r := range arg {
-			if (r >= '1' && r <= '9') || r == '.' {
-			} else {
-				return false
-			}
-		}
-	}
-	// the numbers in rows should be from 1 to 9.
-	return true
-}
-
-// Fatima
-func NoDuplicate(board [][]int, row, col, num int) bool {
-	// check if the number is already in the row
+func is_valid(grid [][]int, x int, y int, num int) bool {
+	// Check row
 	for i := 0; i < 9; i++ {
-		if board[row][i] == num && i != col {
+		if grid[x][i] == num {
 			return false
 		}
 	}
-
-	// check if the number is already in the column
+	// Check column
 	for i := 0; i < 9; i++ {
-		if board[i][col] == num && row != i {
+		if grid[i][y] == num {
 			return false
 		}
 	}
-
-	// check if the number is already in the 3x3 grid // i for the box inside the row / j box in culomn
-	gridRow, gridCol := row/3*3, col/3*3
+	// Check box
+	box_x := (x / 3) * 3
+	box_y := (y / 3) * 3
 	for i := 0; i < 3; i++ {
 		for j := 0; j < 3; j++ {
-			if board[gridRow+i][gridCol+j] == num && (gridRow+i != row && gridCol+j != col) {
+			if grid[box_x+i][box_y+j] == num {
 				return false
 			}
 		}
 	}
-
 	return true
 }
 
-// Mina
-func main() {
-	if !ValidateArgs() {
-		fmt.Println("Error")
-		return
-	}
-	// to build the table
-	table := BuildTable()
-	// check duplicates
-	for x, row := range table {
-		for y, n := range row {
-			if table[x][y] == 0 {
-				continue
-			}
-			if !NoDuplicate(table, x, y, n) {
-				fmt.Println("Error")
-				return
-			}
-		}
-	}
-	solveSudoku(table)
-	printBoard(table)
-
-}
-
-// Mina
-func solveSudoku(board [][]int) bool {
-	row, col := 0, 0
-	foundEmptyCell := false
-
-	// find the next empty cell
-	for i := 0; i < 9; i++ {
-		for j := 0; j < 9; j++ {
-			if board[i][j] == 0 {
-				row, col = i, j
-				foundEmptyCell = true
-				break
-			}
-		}
-		if foundEmptyCell {
-			break
-		}
-	}
-
-	// if there are no more empty cells, the Sudoku is solved
-	if !foundEmptyCell {
-		return true
-	}
-
-	// try to fill in the empty cell with a valid number
-	for num := 1; num <= 9; num++ {
-		if isValid(board, row, col, num) {
-			board[row][col] = num
-			if solveSudoku(board) {
-				return true
-			}
-			board[row][col] = 0
-		}
-	}
-
-	// if no valid number was found, backtrack
-	return false
-}
-
-// Mina
-func isValid(board [][]int, row, col, num int) bool {
-	// check if the number is already in the row
-	for i := 0; i < 9; i++ {
-		if board[row][i] == num {
-			return false
-		}
-	}
-
-	// check if the number is already in the column
-	for i := 0; i < 9; i++ {
-		if board[i][col] == num {
-			return false
-		}
-	}
-
-	// check if the number is already in the 3x3 grid
-	gridRow, gridCol := row/3*3, col/3*3
-	for i := 0; i < 3; i++ {
-		for j := 0; j < 3; j++ {
-			if board[gridRow+i][gridCol+j] == num {
+func solve(grid [][]int) bool {
+	for x := 0; x < 9; x++ {
+		for y := 0; y < 9; y++ {
+			if grid[x][y] == 0 {
+				for num := 1; num <= 9; num++ {
+					if !is_valid(grid, x, y, num) {
+						continue
+					}
+					grid[x][y] = num
+					if solve(grid) {
+						return true
+					} else {
+						grid[x][y] = 0
+					}
+				}
 				return false
 			}
 		}
 	}
-
 	return true
 }
 
-// Hussian Hanoon
-func printBoard(board [][]int) {
+func print_grid(grid [][]int) {
 	for i := 0; i < 9; i++ {
 		for j := 0; j < 9; j++ {
-			fmt.Print(board[i][j])
-			if j != 8 {
-				fmt.Print(" ")
-			}
+			fmt.Printf("%d ", grid[i][j])
 		}
 		fmt.Println()
 	}
 }
 
-// Fatima
-func BuildTable() [][]int {
-	args := os.Args[1:]
-
-	_table := make([][]int, 9)
-
-	for i := 0; i < 9; i++ {
-		_table[i] = make([]int, 9)
-	}
-	for x, row := range _table {
-		for y := range row {
-			if args[x][y] == '.' {
-				_table[x][y] = 0
+func main() {
+	// Parse input arguments
+	var grid [][]int
+	for _, arg := range os.Args[1:] {
+		row := make([]int, 9)
+		for i, c := range arg {
+			if c == '.' {
+				row[i] = 0
 			} else {
-				_table[x][y] = int(args[x][y] - 48)
+				row[i] = int(c - '0')
 			}
-
 		}
+		grid = append(grid, row)
 	}
-	return _table
+
+	// Solve Sudoku
+	if solve(grid) {
+		print_grid(grid)
+	} else {
+		fmt.Println("No solution exists.")
+	}
 }
